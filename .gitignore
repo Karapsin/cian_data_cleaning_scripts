@@ -1,0 +1,18 @@
+# Ignore virtual environments
+venv/
+
+# Ignore CSV files
+*.csv
+
+# Ignore R Project files
+*.Rproj
+
+# Ignore .user files
+*.user
+
+# Ignore R history
+.Rhistory
+
+# Ignore swap files
+*.swp
+
