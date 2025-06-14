@@ -3,7 +3,7 @@ cols_order = [
 'price_history', 'priceTotal', 'cian_range_left_bound', 'cian_range_right_bound',
 
 'creationDate', 'editDate', 'search_page_load_dttm', 'offer_page_load_dttm', 
-'first_creation_date', 'last_creation_date', 'distinct_url_count',
+'first_creation_date', 'last_creation_date', 'distinct_url_count', 'entries_count',
 
 'author_type', 'isApartments',
 

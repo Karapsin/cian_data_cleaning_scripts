@@ -79,12 +79,6 @@ def clean_dataset(df):
     key_columns = ['lat', 'lng', 'floorNumber', 'roomsCount', 'ad_deal_type', 'totalArea']
     df['property_id'] =  hash_cols(df, key_columns)
 
-
-
-    # currency rur, sale_terms free, isEmergency False, isIllegalConstruction False
-    # drop currency, cian_price_range, sale_terms, cranageTypes, isEmergency, houseOverlapType, object_guid, elevator_descr, seriesName, isInHiddenBase, bargaining_sidebar, mortgage_sidebar, sidebar_info, max_dt
-
-
     # lifts
     df['passengerLiftsCount'] = abs(df['passengerLiftsCount'])
     df['cargoLiftsCount'] = abs(df['cargoLiftsCount'])
@@ -96,7 +90,7 @@ def clean_dataset(df):
     df['is_individual_project'] = df['seriesName'].apply(lambda x: x == 'Индивидуальный проект')
     df['has_videos'] = df['videos'].fillna("[]").apply(lambda x: True if x != "[]" else False).value_counts()
     df['isPenthouse'] = df['isPenthouse'].fillna(False)
-    clean_df["ad_is_closed"] = clean_df["ad_is_closed"].fillna(False)
+    df["ad_is_closed"] = df["ad_is_closed"].fillna(False)
 
     # get last parsing dates
     df['offer_page_load_dttm'] = pd.to_datetime(df['offer_page_load_dttm'])
@@ -190,13 +184,4 @@ def clean_dataset(df):
 
 
 clean_df = clean_dataset(pd.read_csv('offers_parsed.csv'))
-
-
-t = clean_df.query("ad_is_closed")[['creationDate', 'editDate', 'offer_page_load_dttm', 'search_page_load_dttm']]
-
-t['editDate'] = pd.to_datetime(t['editDate'])
-t['search_page_load_dttm'] = pd.to_datetime(t['search_page_load_dttm'])
-
 clean_df.to_csv("cleaned_data.csv", index = False)
-
-df['price_history']

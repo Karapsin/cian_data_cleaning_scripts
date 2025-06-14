@@ -2,7 +2,7 @@ import pymongo as pm
 import pandas as pd
 
 DB_URI = "mongodb://localhost:27017/"
-DB_NAME = "cian_db2"
+DB_NAME = "cian_project"
 
 def get_current_date(output='text'):
     return str(datetime.datetime.now())[0:10] if output=='text' else datetime.datetime.now()
@@ -54,3 +54,4 @@ def update_finish_dttm(parsing_type):
 
 def get_finish_dttm(parsing_type):
     return query_table('parsing_finish_dttms', {"parsing_type": parsing_type})['last_finish_dttm'][0]
+
