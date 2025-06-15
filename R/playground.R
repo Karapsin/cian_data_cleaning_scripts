@@ -33,4 +33,14 @@ df%>%
   )%>%
   mutate(close_share = closed/total)
 
-df$ad_is_closed%>%sum()
+df <- data.table::fread("cleaned_data.csv")
+
+df%>%
+  mutate(first_creation_date = as.Date(first_creation_date))%>%
+  filter(first_creation_date >= as.Date("2025-04-12") & first_creation_date < as.Date("2025-04-19"))%>%
+  group_by(ad_deal_type)%>%
+  summarise(total = length(property_id),
+            closed = sum(ad_is_closed)    
+  )%>%
+  ungroup()%>%
+  mutate(close_share = closed/total)

@@ -55,6 +55,7 @@ prices["date"]  = prices["ts"].dt.floor("D")
 
 # keep **last** change on each calendar day
 # i.e. if we had multiple changes of price within 1 day we are keeping the last one
+# seems that AI can detect this super duper corner case, but not many other obvious pitfalls
 prices = (
     prices.sort_values(["property_id", "date", "ts"])
           .groupby(["property_id", "date"], as_index=False)
@@ -74,10 +75,10 @@ meta["end_date"] = np.where(
     pd.NaT
 )
 
-last_price_date = prices.groupby("property_id")["date"].max().rename("last_price_date")
-meta = meta.merge(last_price_date, on="property_id", how="left")
-meta["end_date"] = meta["end_date"].fillna(meta["last_price_date"])
-meta.drop(columns="last_price_date", inplace=True)
+
+last_dt = prices['date'].max()
+meta["end_date"] = meta["end_date"].fillna(last_dt)
+
 
 # ------------------------------------------------------------------------------
 # 4) DAILY skeleton ------------------------------------------------------------
@@ -85,12 +86,16 @@ meta.drop(columns="last_price_date", inplace=True)
 t0 = time.time()
 prop_ids, dates = [], []
 
+end_earlier_start = 0
 for pid, start, end in zip(meta["property_id"], meta["creationDate"], meta["end_date"]):
     if pd.isna(start) or pd.isna(end):
-        continue
+        raise ValueError("NA in start date or end_date")
+    
     start = max(start, TARGET_START)
     if end < start:
+        end_earlier_start += 1
         continue
+
     rng = pd.date_range(start, end, freq="D")
     prop_ids.extend(np.repeat(pid, len(rng)))
     dates.extend(rng)
