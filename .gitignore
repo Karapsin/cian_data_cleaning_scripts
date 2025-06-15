@@ -16,3 +16,4 @@ venv/
 # Ignore swap files
 *.swp
 
+.Rproj.user

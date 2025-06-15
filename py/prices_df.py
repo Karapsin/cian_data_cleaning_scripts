@@ -18,7 +18,7 @@ df = pd.read_csv(CSV_PATH, low_memory=False)
 
 # ensure date columns are true datetimes
 for col in ["creationDate", "editDate"]:
-    df[col] = pd.to_datetime(df[col], utc=True, errors="coerce").dt.floor("D")
+    df[col] = pd.to_datetime(df[col], utc=True, format='ISO8601').dt.floor("D")
 
 # ------------------------------------------------------------------------------
 # 2) price_history  → tidy long table ------------------------------------------
@@ -29,8 +29,8 @@ def _parse_list(val):
         try:
             return ast.literal_eval(val)
         except Exception:
-            return []
-    return []
+            return None
+    return None
 
 df["price_history"] = df["price_history"].apply(_parse_list)
 
@@ -38,17 +38,23 @@ prices = (
     df[["property_id", "price_history"]]
       .explode("price_history", ignore_index=True)
 )
-prices = prices[prices["price_history"].apply(lambda x: isinstance(x, tuple))]
+
+check1 = prices[~prices["price_history"].apply(lambda x: isinstance(x, tuple))].shape[0] != 0
+if check1 != 0:
+    raise ValueError("failed to parse some entries in 'price_history' series")
+
 
 prices[["ts", "price"]] = pd.DataFrame(
     prices.pop("price_history").tolist(),
     index=prices.index
 )
-prices["ts"]    = pd.to_datetime(prices["ts"], utc=True, errors="coerce")
+
+prices["ts"]    = pd.to_datetime(prices["ts"], utc=True, format='mixed') 
 prices["price"] = prices["price"].astype(float)
 prices["date"]  = prices["ts"].dt.floor("D")
 
 # keep **last** change on each calendar day
+# i.e. if we had multiple changes of price within 1 day we are keeping the last one
 prices = (
     prices.sort_values(["property_id", "date", "ts"])
           .groupby(["property_id", "date"], as_index=False)

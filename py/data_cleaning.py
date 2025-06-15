@@ -4,6 +4,8 @@ from hashlib import sha256
 import re
 
 from py.cols_order import cols_order
+from py.clean_price_history import clean_price_history
+
 
 def concat_series(series1, series2):
     return series1.astype(str) + '_' + series2.astype(str)
@@ -71,6 +73,9 @@ def determine_apartment_status(row):
         return False
     else:
         return np.nan
+
+############################################################################################3
+# main function
 
 def clean_dataset(df):
 
@@ -152,6 +157,9 @@ def clean_dataset(df):
         )
     )
 
+
+    # price_history fix
+    df = clean_price_history(df)
 
     # fill NAs in isApartments:
     # if 'апартамент' is at least in one desc col, then it is apartment
