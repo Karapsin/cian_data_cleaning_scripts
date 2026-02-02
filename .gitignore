@@ -1,6 +1,9 @@
 # Ignore virtual environments
 .venv/
 loaded_backup/
+cache/
+html_load/
+.vscode/
 
 # Ignore CSV files
 *.csv
