@@ -1,24 +1,15 @@
-# Ignore virtual environments
 .venv/
 loaded_backup/
 cache/
 html_load/
 .vscode/
 
-# Ignore CSV files
+*.html
+*.gpkg
 *.csv
 *.xlsx
-
-# Ignore R Project files
 *.Rproj
-
-# Ignore .user files
 *.user
-
-# Ignore R history
 .Rhistory
-
-# Ignore swap files
 *.swp
-
 .Rproj.user
