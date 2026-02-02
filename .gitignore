@@ -1,5 +1,6 @@
 # Ignore virtual environments
-venv/
+.venv/
+loaded_backup/
 
 # Ignore CSV files
 *.csv

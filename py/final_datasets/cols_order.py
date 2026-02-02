@@ -1,0 +1,40 @@
+LONG_RENT_COLS = [
+    'ad_deal_type',
+    'ao', 'district',
+    'property_id', 
+    'offer_id',
+    'author_type',
+    'lat', 'lng',
+    'is_censored',
+    'ad_is_closed',
+    'price_last', 'price_first', 'price_history', 
+    'totalArea', 'livingArea', 'kitchenArea', 
+    'roomsCount', 'bathrooms_num', 'repairType', 'ceilingHeight',
+    'buildYear', 'isApartments', 'parking',
+    'demolishedInMoscowProgramm', 'materialType', 'houseMaterialType',
+    'floorNumber', 'floorsCount',
+    'lifts', 'passengerLiftsCount', 'cargoLiftsCount',
+    'description', 'photos_num', 'has_videos', 
+    'first_creation_date', 'last_seen_dttm', 'duration',
+    'kids_and_animals', 'rent_time'
+]
+
+SALE_SECONDARY_COLS = [
+    'ad_deal_type',
+    'ao', 'district',
+    'property_id', 
+    'offer_id',
+    'author_type',
+    'lat', 'lng',
+    'is_censored',
+    'ad_is_closed',
+    'price_last', 'price_first', 'price_history', 
+    'totalArea', 'livingArea', 'kitchenArea', 
+    'roomsCount', 'bathrooms_num', 'repairType', 'ceilingHeight',
+    'buildYear', 'isApartments', 'parking',
+    'demolishedInMoscowProgramm', 'materialType', 'houseMaterialType',
+    'floorNumber', 'floorsCount',
+    'lifts', 'passengerLiftsCount', 'cargoLiftsCount',
+    'description', 'photos_num', 'has_videos', 
+    'first_creation_date', 'last_seen_dttm', 'duration', 'mortgageAllowed'
+]
