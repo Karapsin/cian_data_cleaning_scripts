@@ -1,5 +1,4 @@
-# pip install -U osmnx geopandas shapely pyproj requests
-
+import numpy as np
 import pandas as pd
 import geopandas as gpd
 import osmnx as ox
@@ -22,6 +21,12 @@ ox.settings.requests_timeout = 180
 # ox.settings.http_user_agent = "my-osm-moscow-features/1.0 (contact: you@example.com)"
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"  # you can swap if needed
+
+# ---- GREEN FILTER THRESHOLDS ----
+GREEN_METRIC_EPSG = 32637              # UTM 37N (meters) for Moscow vicinity
+GREEN_MIN_WIDTH_M = 100.0
+GREEN_MIN_LENGTH_M = 400.0
+GREEN_MIN_AREA_M2 = 0.5 * 1_000_000.0  # 0.5 km^2 = 500,000 m^2
 
 
 def _fetch(boundary, tags) -> gpd.GeoDataFrame:
@@ -128,20 +133,90 @@ def get_mkad_polygon_wgs84(
 def filter_within_mkad(df: gpd.GeoDataFrame, mkad_poly_wgs84) -> gpd.GeoDataFrame:
     """
     Keep only features strictly within the MKAD polygon.
-    Note: geometries that cross MKAD will be dropped; only fully-inside geometries remain.
-
-    If you want to also keep geometries exactly on the boundary line, use:
-        mask = within | touches
     """
     df = df.set_geometry("coords")
     df_wgs = df.to_crs("EPSG:4326") if df.crs else df.set_crs("EPSG:4326")
 
     mkad = gpd.GeoSeries([mkad_poly_wgs84], crs="EPSG:4326").iloc[0]
-
     mask = df_wgs.geometry.within(mkad)
-    # mask = df_wgs.geometry.within(mkad) | df_wgs.geometry.touches(mkad)  # optional boundary-inclusive
-
     return df_wgs[mask].copy()
+
+
+# -------------------- NEW: GREEN post-filter --------------------
+
+def _mrr_length_width_m(geom) -> tuple[float, float]:
+    """
+    Return (length, width) in meters based on the geometry's minimum rotated rectangle.
+    Expects geom in a metric CRS (meters).
+    """
+    try:
+        if geom is None or geom.is_empty:
+            return 0.0, 0.0
+        # Try to fix minor invalidities (cheap)
+        if hasattr(geom, "is_valid") and not geom.is_valid:
+            geom = geom.buffer(0)
+        mrr = geom.minimum_rotated_rectangle  # oriented envelope :contentReference[oaicite:2]{index=2}
+        if mrr.geom_type != "Polygon":
+            return 0.0, 0.0
+
+        coords = list(mrr.exterior.coords)
+        if len(coords) < 5:
+            return 0.0, 0.0
+
+        # Rectangle exterior has 5 points (last == first). Use first 4 edges.
+        seglens = []
+        for i in range(4):
+            x1, y1 = coords[i]
+            x2, y2 = coords[i + 1]
+            seglens.append(float(np.hypot(x2 - x1, y2 - y1)))
+
+        seglens = [l for l in seglens if l > 0]
+        if not seglens:
+            return 0.0, 0.0
+
+        length = max(seglens)
+        width = min(seglens)
+        return length, width
+    except Exception:
+        return 0.0, 0.0
+
+
+def green_filter(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Keep only green areas with:
+      - (Multi)Polygon geometry
+      - area >= 0.5 km^2
+      - min-rot-rect length >= 400m and width >= 100m
+    Computed in a projected CRS (meters). :contentReference[oaicite:3]{index=3}
+    """
+    if gdf.empty:
+        return gdf
+
+    g = gdf[gdf.geometry.notna()].copy()
+
+    # Ensure CRS before projecting
+    g = g.set_crs("EPSG:4326") if g.crs is None else g.to_crs("EPSG:4326")
+    g_m = g.to_crs(epsg=GREEN_METRIC_EPSG)
+
+    # Polygons only (parks/woods should mostly be polygons; this avoids lines/points)
+    geom_type = g_m.geometry.geom_type
+    mask_poly = geom_type.isin(["Polygon", "MultiPolygon"])
+
+    # Area filter first (cheap), then MRR dims (more expensive)
+    area_m2 = g_m.geometry.area
+    mask_area = area_m2 >= GREEN_MIN_AREA_M2
+
+    candidates = g_m[mask_poly & mask_area]
+    if candidates.empty:
+        return g.iloc[0:0].copy()
+
+    keep_idx = []
+    for idx, geom in candidates.geometry.items():
+        length_m, width_m = _mrr_length_width_m(geom)
+        if (length_m >= GREEN_MIN_LENGTH_M) and (width_m >= GREEN_MIN_WIDTH_M):
+            keep_idx.append(idx)
+
+    return g.loc[keep_idx].copy()
 
 
 def build_moscow_labeled_df(place: str = PLACE) -> gpd.GeoDataFrame:
@@ -184,13 +259,13 @@ def build_moscow_labeled_df(place: str = PLACE) -> gpd.GeoDataFrame:
     }
     waste = _mk(boundary, "waste", tags_waste)
 
-    # --- GREEN
+    # --- GREEN (FILTERED by area + MRR dims)
     tags_green = {
         "leisure": ["park", "garden", "nature_reserve"],
         "landuse": ["forest", "grass", "recreation_ground"],
         "natural": ["wood", "grassland"],
     }
-    green = _mk(boundary, "green", tags_green)
+    green = _mk(boundary, "green", tags_green, post_filter=green_filter)
 
     combined = pd.concat([water, industrial, energy, waste, green], ignore_index=True)
     combined = gpd.GeoDataFrame(combined, geometry="coords", crs="EPSG:4326")
