@@ -3,6 +3,7 @@ loaded_backup/
 cache/
 html_load/
 .vscode/
+database/
 
 *.html
 *.gpkg
